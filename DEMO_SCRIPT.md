@@ -3,6 +3,39 @@
 Oldindan: `uvicorn app.main:app --port 8000`, brauzerda http://localhost:8000, **▶ Demo rejimi** tugmasi
 (holat tozalanadi, rozilik beriladi). Internet/AI kaliti bo'lmasa ham ishlaydi (Offline demo rejimi).
 
+## Demo rejimi — 20 qadam, hamma funksiya
+
+Modalda ikki variant:
+- **⏵ Avtomatik** — hammasini o'zi bosib o'tadi (~5 daqiqa). Video yozish uchun eng qulay.
+- **Qo'lda boshlash** — har qadam bajariladi, keyin **Keyingi →** bosasiz (taqdimotda gapirib turish uchun).
+
+Pastdagi panel: **←** orqaga · **⏵ Avto** yoqish/o'chirish · **Keyingi →** · **✕** to'xtatish.
+
+| # | Qadam | Ekranda nima bo'ladi |
+|---|---|---|
+| 1 | Onboarding | Telefon → SMS kod → ism → Humo karta (CVV/PIN yo'q) → karta SMS → rozilik + balans |
+| 2 | Xavfsizlik | "Siz haqingizda nima saqlanyapti?" — faqat oxirgi 4 raqam, sessiya davomida |
+| 3 | Qalqon | Aziza ko'chirmasi → 4 muammo, oyiga 478 000 so'm |
+| 4 | AI tushuntirish | Oqimli javob + "Hisoblandi" formulalar |
+| 5 | Xat | Yandex Plus uchun qaytarish xati, nusxa |
+| 6 | Limit | Megogo limiti 39 000 → Tasdiqlash → Bajarildi |
+| 7 | Bloklash | Sport zal bloklanadi |
+| 8 | Avtonomiya | "Avto" rejim: Telegram limiti o'zi bajariladi → bosh sahifada **Bekor qilish** (24 soat) |
+| 9 | Chat | "Qaysi qarzimni birinchi yopay?" |
+| 10 | Shifo | Qarzlar bo'yicha AI tahlil |
+| 11 | Bosh sahifa | AI xulosa + sinergiya |
+| 12 | O'sish | Salomat dorixona: tarix + prognoz grafigi |
+| 13 | Bufer | 30% → 15% — bo'sh pul qayta hisoblanadi |
+| 14 | O'sish AI | Nega 7 kunlik depozit mos, boshqalari yo'q |
+| 15 | Depozit | 64,3 mln → Tasdiqlash → Bajarildi |
+| 16 | Meros | Ishonchli shaxs qo'shiladi |
+| 17 | Audit | Tekshirish ✅ → Buzib ko'rish → ❌ → Tiklash → ✅ |
+| 18 | AI payload | AI'ga nima yuborildi — ism/karta tokenlangan |
+| 19 | Qanday ishlaydi | Arxitektura va biznes-model |
+| 20 | Chiqish | Shaxsiy ma'lumotlar o'chiriladi |
+
+## Jonli taqdimot (7 daqiqa)
+
 | Vaqt | Ekran | Nima deymiz |
 |---|---|---|
 | 0:00–0:45 | — (slayd) | **Muammo.** Odamlar har oy unutilgan obunalar, sinovdan pullikka o'tgan xizmatlar, ikki marta to'lovlarga pul yo'qotadi. Kichik biznes esa millionlarni joriy hisobda foizsiz ushlab turadi. Banklarda bunga yechim yo'q. |

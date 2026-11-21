@@ -866,19 +866,96 @@ function sendChat(text) {
 }
 function openChat(open = true) { $("#chat").classList.toggle("open", open); if (open) setTimeout(() => $("#chatInput").focus(), 250); }
 
-// ------------------------------------------------------------------ demo mode
+// ------------------------------------------------------------------ demo mode (covers every feature; manual or autoplay)
+const D = { token: 0, busy: false, auto: false, timer: null };
+class DemoCancel extends Error {}
+async function dwait(ms) { const t = D.token; await wait(ms); if (t !== D.token) throw new DemoCancel(); }
+async function dfind(sel, ms = 8000) {
+  const t0 = Date.now(), t = D.token;
+  for (;;) {
+    if (t !== D.token) throw new DemoCancel();
+    const el = $(sel);
+    if (el) return el;
+    if (Date.now() - t0 > ms) throw new Error("topilmadi: " + sel);
+    await wait(100);
+  }
+}
+async function dclick(sel, pause = 450) {
+  const el = await dfind(sel);
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  await dwait(pause);
+  el.click();
+  return el;
+}
+async function dset(sel, value) { const el = await dfind(sel); el.value = ""; await typeSlow(el, String(value), 35); return el; }
+async function waitAi(scopeSel, ms = 30000) {
+  await dwait(400);
+  const t0 = Date.now();
+  while ($(`${scopeSel} .ai-text.cursor`) && Date.now() - t0 < ms) await dwait(200);
+  await dwait(300);
+}
+async function confirmAction(pause = 1800) {
+  await dwait(pause);                       // let the audience read the proposal
+  await dclick("#mYes", 200);
+  await dfind("#mClose", 15000);
+  await dwait(1800);
+  $("#mClose")?.click();
+}
+async function dscroll(sel) { const el = await dfind(sel); el.scrollIntoView({ block: "start", behavior: "smooth" }); }
+
 const DEMO = [
-  { t: "Yangi mijoz: telefon → SMS kod → ism → Humo karta (CVV va PIN so'ralmaydi) → karta tasdig'i → rozilik va ko'chirma.", run: autoOnboard },
-  { t: "Tayyorlangan demo profil — Aziza (90 kunlik ko'chirma + foydalanish signallari). Qalqon tranzaksiyalarni tekshiradi.", run: async () => { obHide(); await ensureProfile("aziza"); await go("qalqon"); $("#loadBtn")?.click(); } },
-  { t: "4 ta muammo topildi: sinovdan pullikka o'tgan obuna, ikki kanalda to'lov, ishlatilmayotgan sport zal, xabarsiz narx oshishi. AI tushuntiradi.", run: async () => { await go("qalqon"); $("#explainBtn")?.click(); setTimeout(() => $("#qalqonAi")?.scrollIntoView({ behavior: "smooth" }), 300); } },
-  { t: "AI bekor qilish xatini yozadi — faqat ko'chirmadagi faktlar bilan. Ism va karta AI'ga yuborilmaydi (tokenlar).", run: async () => { await go("qalqon"); $("[data-letter^='yandex']")?.click(); } },
-  { t: "Ishlatilmayotgan sport zal uchun to'lovni bloklaymiz: Tayyorlash → Tasdiqlash → Bajarish → Audit.", run: async () => { closeModal(); await go("qalqon"); $("[data-block^='sport']")?.click(); } },
-  { t: "Endi biznes: Dorixona \"Salomat\". G'aznachi to'lov jadvalini prognoz qiladi va bo'sh pulni hisoblaydi.", run: async () => { closeModal(); await ensureProfile("salomat"); await go("osish"); } },
-  { t: "7 kunlik depozit — ish haqidan oldin qaytadi. 30 kunlik va obligatsiya mos emas: to'lovdan keyin tugaydi.", run: async () => { await go("osish"); $("#osishAiBtn")?.click(); } },
-  { t: "Depozitni ochamiz — tasdiqlash oynasida summa, stavka, qaytish sanasi va daromad.", run: async () => { $("#openDep")?.click(); } },
-  { t: "Bosh sahifa: modullar sinergiyasi va moliyaviy salomatlik ko'rsatkichi.", run: async () => { closeModal(); await go("home"); } },
-  { t: "Audit jurnali: har bir qadam zanjirda. Kimdir yozuvni o'zgartirsa — darhol aniqlanadi.", run: async () => { await go("audit"); setTimeout(() => $("#verBtn")?.click(), 400); } },
-  { t: "Xavfsizlik: \"AI'ga nima yuborildi?\" — shaxsiy ma'lumotlar tokenlar bilan almashtirilgan. \"Chiqish\" hammasini o'chiradi.", run: async () => { await ensureProfile("aziza"); await go("security"); } },
+  { t: "1. Yangi mijoz ro'yxatdan o'tadi: telefon → SMS kod → ism → Humo karta (CVV va PIN so'ralmaydi, karta raqami serverga ketmaydi) → karta SMS tasdig'i → rozilik va ko'chirma.",
+    dur: 2500, run: async () => { await autoOnboard(); for (let i = 0; i < 60 && S.mode !== "user"; i++) await dwait(200); } },
+  { t: "2. Kabinet ochildi. \"Xavfsizlik\"da ko'ramiz: serverda faqat karta turi va oxirgi 4 raqam — to'liq raqam ham, CVV ham yo'q. Hammasi faqat sessiyada.",
+    dur: 3500, run: async () => { await go("security"); await dscroll("#wipeBtn"); } },
+  { t: "3. Tayyor demo profil — Aziza: 90 kunlik ko'chirma va xizmatdan foydalanish signallari. Qalqon tranzaksiyalarni tekshiradi.",
+    dur: 3000, run: async () => { await ensureProfile("aziza"); await go("qalqon"); await dclick("#loadBtn"); await dfind("[data-block]"); } },
+  { t: "4. 4 ta muammo: sinovdan pullikka o'tgan obuna, ikki kanaldan to'lov, 97 kun ishlatilmagan sport zal, xabarsiz narx oshishi. AI tushuntiradi — har raqam ostida \"Hisoblandi\".",
+    dur: 2500, run: async () => { await dclick("#explainBtn"); await dscroll("#qalqonAi"); await waitAi("#qalqonAi"); $("#qalqonAi details.hisob")?.setAttribute("open", ""); } },
+  { t: "5. AI Yandex Plus uchun bekor qilish va pulni qaytarish xatini yozadi — faqat ko'chirmadagi faktlar bilan. Nusxa olish yoki email.",
+    dur: 1500, run: async () => { await dclick("[data-letter^='yandex']"); await waitAi("#modal"); await dwait(1500); await dclick("#lCopy"); await dwait(1500); closeModal(); } },
+  { t: "6. Megogo narxi 39 000 → 49 000 so'mga oshgan. Karta limitini eski narxga qo'yamiz: Tayyorlash → Tasdiqlash → Bank → Audit.",
+    dur: 1500, run: async () => { await go("qalqon"); await dclick("[data-limit^='megogo']"); await dset("#limVal", "39000"); await dwait(900); await dclick("#lmGo"); await confirmAction(); } },
+  { t: "7. Ishlatilmayotgan sport zal to'lovini bloklaymiz. \"Allaqachon tejaldi\" hisoblagichi o'sadi.",
+    dur: 3000, run: async () => { await go("qalqon"); await dclick("[data-block^='sport']"); await confirmAction(); await dwait(600); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+  { t: "8. Avtonomiya \"Limit ichida avtomatik\" (500 000 so'm): Telegram dublikatiga limit — FinPilot o'zi bajaradi. Avtomatik amalni 24 soat ichida bekor qilish mumkin.",
+    dur: 2500, run: async () => {
+      await saveSettings("auto", 500000); await dwait(1200);
+      await go("qalqon"); await dclick("[data-limit^='telegram']"); await dset("#limVal", "0"); await dwait(700); await dclick("#lmGo");
+      await dwait(2500); await go("home"); await dscroll(".feed"); await dwait(1500);
+      await dclick(".feed [data-undo]"); await dwait(1800); await saveSettings("one_click", 500000);
+    } },
+  { t: "9. Chat: mijoz o'zbek tilida savol beradi — agent kerakli hisob-kitobni o'zi chaqiradi va tushuntiradi.",
+    dur: 2500, run: async () => { openChat(true); await dwait(600); await typeSlow($("#chatInput"), "Qaysi qarzimni birinchi yopay?", 25); await dwait(300); $("#chatForm").requestSubmit(); await waitAi("#chatBody"); } },
+  { t: "10. Shifo: har bir kreditning haqiqiy narxi va qarz yuki (DTI). AI avalanche va snowball strategiyalarini solishtiradi.",
+    dur: 2500, run: async () => { openChat(false); await go("shifo"); await dclick("#shifoAiBtn"); await dscroll("#shifoAi"); await waitAi("#shifoAi"); } },
+  { t: "11. Bosh sahifa: moliyaviy salomatlik o'sdi, modullar sinergiyasi va \"FinPilot bugun nima qildi\" lentasi.",
+    dur: 2500, run: async () => { await go("home"); await dwait(1200); await dclick("#aiSummaryBtn"); await waitAi("#aiSummary"); await dscroll("#synergy"); } },
+  { t: "12. Endi biznes — Dorixona \"Salomat\". AI G'aznachi to'lov jadvalini prognoz qiladi: ish haqi, ijara, yetkazib beruvchilar.",
+    dur: 3500, run: async () => { await ensureProfile("salomat"); await go("osish"); await dscroll(".chart-box"); } },
+  { t: "13. Xavfsizlik buferini 15% → 30% qilsak, bo'sh pul kamayadi. Xavfni mijozning o'zi boshqaradi.",
+    dur: 2000, run: async () => {
+      const r = await dfind("#bufRange"); r.value = 30; r.dispatchEvent(new Event("input")); await dwait(2600);
+      await dscroll("#idleVal"); await dwait(2200);
+      const r2 = await dfind("#bufRange"); r2.value = 15; r2.dispatchEvent(new Event("input")); await dwait(1500);
+    } },
+  { t: "14. 7 kunlik depozit ish haqidan 2 kun oldin qaytadi. 30 kunlik depozit va obligatsiya mos emas — AI sababini aytadi.",
+    dur: 2500, run: async () => { await dclick("#osishAiBtn"); await waitAi("#osishAi"); } },
+  { t: "15. Depozit ochish: summa, stavka, qaytish sanasi va daromad — tasdiqlashdan oldin hammasi ko'rinadi.",
+    dur: 2000, run: async () => { await dclick("#openDep"); await confirmAction(3000); await dwait(800); } },
+  { t: "16. Meros: favqulodda holat uchun ishonchli shaxs — faqat ko'rish huquqi, pul o'tkaza olmaydi.",
+    dur: 2500, run: async () => { await ensureProfile("aziza"); await go("meros"); await dset("#trName", "Dilnoza Karimova"); await dset("#trRel", "opa"); await dset("#trPhone", "+998 90 765 43 21"); await dwait(400); await dclick("#trSave"); } },
+  { t: "17. Audit jurnali: har bir qadam SHA-256 zanjirida. Yozuvni yashirincha o'zgartirib ko'ramiz — tizim darhol aniqlaydi.",
+    dur: 2500, run: async () => {
+      await go("audit"); await dclick("#verBtn"); await dwait(2200); await dclick("#tamperBtn"); await dwait(1500);
+      await dclick("#verBtn"); await dwait(3200); await dclick("#restoreBtn"); await dwait(1200); await dclick("#verBtn");
+    } },
+  { t: "18. \"AI'ga nima yuborildi?\" — ism, karta, telefon tokenlar bilan almashtirilgan: [ISM_1], [KARTA_1], [TEL_1].",
+    dur: 4000, run: async () => { await go("security"); await dscroll("pre.payload"); } },
+  { t: "19. Qanday ishlaydi: arxitektura, \"raqamlarni kod hisoblaydi, so'zlarni AI yozadi\" va B2B2C biznes-model.",
+    dur: 4000, run: async () => { await go("how"); } },
+  { t: "20. Chiqish — barcha shaxsiy ma'lumotlar o'chiriladi. FinPilot: himoya qiladi, o'stiradi, qarzni yengillashtiradi.",
+    dur: 3000, run: async () => { await doLogout(); } },
 ];
 async function enterDemoSession() {
   S.auth = await api("/api/auth/demo", { method: "POST" });
@@ -886,33 +963,53 @@ async function enterDemoSession() {
   S.mode = "demo";
 }
 async function ensureProfile(pid) {
+  closeModal(); obHide();
   if (S.mode !== "demo") { await enterDemoSession(); S.pid = pid; await startApp(); return; }
   if (S.pid !== pid) await switchProfile(pid);
 }
 function renderDemo() {
   const bar = $("#demoBar");
   if (S.demoStep < 0) { bar.classList.add("hidden"); return; }
-  const s = DEMO[S.demoStep];
+  const s = DEMO[S.demoStep], last = S.demoStep === DEMO.length - 1;
   bar.classList.remove("hidden");
-  bar.innerHTML = `<span class="step">${S.demoStep + 1}/${DEMO.length}</span><span class="txt">${esc(s.t)}</span>
-    <button class="btn ghost sm" id="dPrev" ${S.demoStep === 0 ? "disabled" : ""}>←</button>
-    <button class="btn green sm" id="dNext">${S.demoStep === DEMO.length - 1 ? "Tugatish" : "Keyingi →"}</button>
-    <button class="btn ghost sm" id="dExit">✕</button>`;
+  bar.innerHTML = `<span class="step">${S.demoStep + 1}/${DEMO.length}</span><span class="txt">${esc(s.t.replace(/^\d+\.\s*/, ""))}</span>
+    <button class="btn ghost sm" id="dPrev" ${S.demoStep === 0 ? "disabled" : ""} title="Oldingi">←</button>
+    <button class="btn ghost sm" id="dAuto" title="Avtomatik o'ynatish (video uchun)">${D.auto ? "⏸ Pauza" : "⏵ Avto"}</button>
+    <button class="btn green sm" id="dNext" ${D.busy ? "disabled" : ""}>${D.busy ? '<span class="spinner"></span>' : last ? "Tugatish" : "Keyingi →"}</button>
+    <button class="btn ghost sm" id="dExit" title="Demoni to'xtatish">✕</button>`;
   $("#dPrev").onclick = () => runDemo(S.demoStep - 1);
-  $("#dNext").onclick = () => (S.demoStep === DEMO.length - 1 ? stopDemo() : runDemo(S.demoStep + 1));
+  $("#dNext").onclick = () => (last ? stopDemo() : runDemo(S.demoStep + 1));
+  $("#dAuto").onclick = () => { D.auto = !D.auto; renderDemo(); if (D.auto && !D.busy) scheduleNext(); else clearTimeout(D.timer); };
   $("#dExit").onclick = stopDemo;
 }
+function scheduleNext() {
+  clearTimeout(D.timer);
+  if (!D.auto || S.demoStep < 0) return;
+  D.timer = setTimeout(() => {
+    if (S.demoStep === DEMO.length - 1) { D.auto = false; stopDemo(); toast("Demo tugadi ✓"); }
+    else runDemo(S.demoStep + 1);
+  }, DEMO[S.demoStep].dur || 2500);
+}
 async function runDemo(i) {
-  S.demoStep = i;
+  clearTimeout(D.timer);
+  const token = ++D.token;
+  S.demoStep = i; D.busy = true;
   renderDemo();
-  try { await DEMO[i].run(); } catch (e) { console.warn(e); }
+  try { await DEMO[i].run(); }
+  catch (e) { if (!(e instanceof DemoCancel)) { console.warn("demo step", i + 1, e); toast("Demo qadami to'liq bajarilmadi — davom eting", 2500); } }
+  if (token !== D.token) return;           // a newer step took over
+  D.busy = false;
+  renderDemo();
+  scheduleNext();
 }
 function startDemo() {
-  const box = openModal(`<h2>▶ Demo rejimi</h2><p class="muted">Demo holati tozalanadi (amallar, audit, joriy sessiya) va bosqichma-bosqich ssenariy boshlanadi: avval yangi mijoz onboardingi, keyin tayyor demo profillar.</p>
-    <div class="modal-actions"><button class="btn ghost" id="dmNo">Bekor</button><button class="btn green" id="dmYes">Boshlash</button></div>`);
+  const box = openModal(`<h2>▶ Demo rejimi</h2><p class="muted">Demo holati tozalanadi (amallar, audit, joriy sessiya). Ssenariy ${DEMO.length} qadamda ilovaning barcha imkoniyatlarini ko'rsatadi: onboarding, Qalqon, avtonomiya, chat, Shifo, O'sish, Meros, audit, xavfsizlik va chiqish.</p>
+    <p class="small muted">"Qo'lda" — har qadamni "Keyingi →" bilan o'zingiz o'tkazasiz (jonli taqdimot uchun). "Avtomatik" — hammasi o'zi o'ynaydi (~5 daqiqa, video yozish uchun).</p>
+    <div class="modal-actions"><button class="btn ghost" id="dmNo">Bekor</button><button class="btn" id="dmAuto">⏵ Avtomatik</button><button class="btn green" id="dmYes">Qo'lda boshlash</button></div>`);
   $("#dmNo", box).onclick = closeModal;
-  $("#dmYes", box).onclick = async () => {
+  const begin = async auto => {
     closeModal();
+    D.auto = auto;
     await enterDemoSession();
     await api("/api/demo/reset", { method: "POST" });
     for (const pid of ["aziza", "salomat"]) await api(`/api/settings/${pid}`, { method: "PUT", body: { autonomy: "one_click", auto_limit: 500000 } });
@@ -920,8 +1017,10 @@ function startDemo() {
     await doLogout();
     runDemo(0);
   };
+  $("#dmYes", box).onclick = () => begin(false);
+  $("#dmAuto", box).onclick = () => begin(true);
 }
-function stopDemo() { S.demoStep = -1; renderDemo(); }
+function stopDemo() { D.token++; D.busy = false; D.auto = false; clearTimeout(D.timer); S.demoStep = -1; renderDemo(); }
 
 // ------------------------------------------------------------------ boot
 async function boot() {

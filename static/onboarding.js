@@ -416,7 +416,9 @@ async function typeOtp() {
 async function autoOnboard() {
   if (S.auth.stage !== "phone") await doLogout();
   const phone = await waitFor("#obPhone");
-  phone.value = ""; await typeSlow(phone, "901234567", 70);
+  // a fresh demo number each run, so rehearsals never hit the OTP resend limits
+  const demoPhone = "90" + String(Math.floor(1000000 + Math.random() * 8999999));
+  phone.value = ""; await typeSlow(phone, demoPhone, 70);
   await wait(300); $("#obSend").click();
   await waitFor("#otpBoxes"); await typeOtp();
   await typeSlow(await waitFor("#obFirst"), "Aziza"); await typeSlow($("#obLast"), "Karimova");

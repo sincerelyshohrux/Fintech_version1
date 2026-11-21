@@ -4,6 +4,7 @@ The numbers still come from the same deterministic tools; only the wording is te
 The UI shows an "Offline demo rejimi" badge so this is never presented as live AI.
 """
 import asyncio
+import json
 import re
 
 from app.agent.tools import TOOL_LABELS, run_tool
@@ -30,7 +31,8 @@ def _intent(message: str, intent: str | None) -> str:
 
 async def _tool(name, args, pid, ctx, events):
     out = await run_tool(name, args, pid, ctx)
-    events.append({"type": "tool", "name": name, "label": TOOL_LABELS[name], "input": args, "hisob": out["hisob"]})
+    events.append({"type": "tool", "name": name, "label": TOOL_LABELS[name], "input": args, "hisob": out["hisob"],
+                   "_data": out["data"]})
     return out["data"]
 
 
@@ -122,11 +124,20 @@ async def offline_answer(pid: str, message: str, intent: str | None, ctx: dict, 
         text = (f"Moliyaviy salomatlik: **{snap['health_score']}/100**. Sof holat: **{fmt_som(snap['net_position']['net'])}**.\n\n"
                 + "\n".join(f"{i}. {s}" for i, s in enumerate(steps, 1)))
 
+    # Nothing is sent in offline mode, but show exactly what live mode WOULD send (already tokenized)
+    payload = [{"role": "offline", "content": "Offline rejim: AI'ga hech narsa yuborilmadi. Jonli rejimda modelga aynan quyidagi tokenlangan ma'lumot boradi."},
+               {"role": "user", "content": conv.redactor.redact(message)}]
     for ev in events:
+        data = ev.pop("_data", None)
+        if data is not None:
+            payload.append({"role": "tool", "name": ev["name"],
+                            "content": conv.redactor.redact(json.dumps(data, ensure_ascii=False, default=str))[:1500]})
         yield ev
         await asyncio.sleep(0.15)
     for chunk in re.findall(r"\S+\s*", text):
         yield {"type": "text", "text": chunk}
         await asyncio.sleep(0.018)
-    conv.last_payload = [{"role": "offline", "content": "Offline rejim: AI'ga hech narsa yuborilmadi"}]
-    yield {"type": "done", "redacted_payload": conv.last_payload}
+    from app.agent.agent import last_payload_by_profile
+    conv.last_payload = payload
+    last_payload_by_profile[pid] = payload
+    yield {"type": "done", "redacted_payload": payload}
