@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FinPilot — AI moliyaviy agent</title>
+  <meta name="description" content="FinPilot: pulingizni himoya qiladigan, o'stiradigan va qarzni kamaytiradigan AI agent">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script>
+    // Apply saved theme before first paint
+    try { const t = localStorage.getItem("fp-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Asosiy menyu">
+    <div class="brand"><div class="logo">🧭</div><div>FinPilot<small>AI moliyaviy agent</small></div></div>
+    <nav id="nav"></nav>
+    <div class="sidebar-foot"><div id="privacyBadge" class="privacy-badge hidden">🔒 <span>Ma'lumotlar saqlanmaydi — chiqishingiz bilan o'chiriladi</span></div><div id="aiStatus"></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="seg" id="profileSeg" role="group" aria-label="Profil"></div>
+      <div id="userChip" class="user-chip hidden"></div>
+      <span id="privacyPill" class="pill green privacy-pill hidden" title="Ma'lumotlar saqlanmaydi — chiqishingiz bilan o'chiriladi">🔒 Saqlanmaydi</span>
+      <div id="autonomyWrap">
+        <span class="ctl-label">Autonomiya darajasi</span>
+        <div class="seg" id="autonomySeg" role="group" aria-label="Autonomiya darajasi"></div>
+      </div>
+      <label id="limitWrap" class="hidden"><span class="ctl-label">Limit</span>
+        <input id="limitInput" class="limit-input num" inputmode="numeric" aria-label="Avtomatik limit (so'm)">
+      </label>
+      <div class="spacer"></div>
+      <button class="btn ghost sm" id="demoBtn">▶ Demo rejimi</button>
+      <button class="btn danger sm" id="logoutBtn" title="Chiqish va barcha ma'lumotlarni o'chirish">⎋ Chiqish</button>
+      <button class="icon-btn" id="themeBtn" title="Mavzu" aria-label="Yorug'/qorong'i mavzu">🌓</button>
+    </header>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Pastki menyu"></nav>
+
+<button class="chat-fab" id="chatFab">✨ FinPilot'dan so'rang</button>
+<aside class="chat" id="chat" aria-label="FinPilot chat">
+  <div class="chat-head">
+    <div class="ai-avatar">🧭</div>
+    <div style="flex:1"><b>FinPilot</b><div class="small muted" id="chatSub">Savolingizni o'zbek tilida yozing</div></div>
+    <button class="icon-btn" id="chatNew" title="Yangi suhbat">↺</button>
+    <button class="icon-btn" id="chatClose" title="Yopish">✕</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chips" id="chatChips"></div>
+  <form class="chat-form" id="chatForm">
+    <input id="chatInput" autocomplete="off" placeholder="Masalan: Qaysi obunalarni bekor qilsam bo'ladi?" maxlength="2000">
+    <button class="btn" type="submit">Yuborish</button>
+  </form>
+</aside>
+
+<div id="onboard" class="ob-wrap hidden" role="dialog" aria-modal="true" aria-label="Ro'yxatdan o'tish"></div>
+<div id="smsBanner" class="sms-banner" role="status" aria-live="polite"></div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
+<div id="demoBar" class="demo hidden"></div>
+<div id="toast" class="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/onboarding.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
